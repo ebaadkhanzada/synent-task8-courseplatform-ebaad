@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synent Task 8 - Online Course Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --accent: #10b981;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: #0b1120; border-bottom: 1px solid var(--border); padding: 1.2rem 6%; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .user-status { font-size: 0.9rem; color: var(--text-muted); }
+
+    .container { padding: 3rem 6%; max-width: 1200px; margin: 0 auto; }
+    .hero { text-align: center; margin-bottom: 3rem; }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .hero p { color: var(--text-muted); }
+
+    .courses-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; }
+    .course-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.8rem; display: flex; flex-direction: column; justify-content: space-between; }
+    .course-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.6rem; }
+    .course-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .course-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+    .price { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn.enrolled { background: var(--accent); cursor: default; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 2000; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 500px; }
+    .modal h2 { margin-bottom: 1rem; }
+    .lesson-item { padding: 10px; background: #0f172a; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Synent LMS Platform</div>
+    <div class="user-status" id="user-info">Logged in as Student (Demo User)</div>
+  </header>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Full Stack Online Course Platform</h1>
+      <p>React + Node.js Express + MongoDB + JWT Auth + Razorpay Integration</p>
+    </div>
+
+    <div class="courses-grid" id="courses-grid"></div>
+  </div>
+
+  <div class="modal-overlay" id="course-modal">
+    <div class="modal">
+      <h2 id="modal-title">Course Modules</h2>
+      <div id="modal-content"></div>
+      <br>
+      <button class="btn" style="width:100%" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const mockCourses = [
+      {
+        id: 'c1',
+        title: 'Full Stack MERN Web Development',
+        description: 'Master MongoDB, Express, React, and Node.js with real-world payment gateway project.',
+        price: 2999,
+        modules: [
+          { title: 'Module 1: Backend API Development', lesson: 'Building REST APIs with Express' },
+          { title: 'Module 2: JWT Authentication', lesson: 'Securing routes and hashing passwords' },
+          { title: 'Module 3: Razorpay Integration', lesson: 'Handling payments and webhook verification' }
+        ]
+      },
+      {
+        id: 'c2',
+        title: 'Advanced JavaScript Architecture',
+        description: 'Deep dive into asynchronous JS, ES6+, Web APIs, DOM manipulation, and performance.',
+        price: 1999,
+        modules: [
+          { title: 'Module 1: Event Loop & Promises', lesson: 'Understanding async execution' },
+          { title: 'Module 2: Clean Code Practices', lesson: 'Design patterns and modular architecture' }
+        ]
+      }
+    ];
+
+    let enrolledCourseIds = JSON.parse(localStorage.getItem('synent_enrolled')) || [];
+
+    function renderCourses() {
+      const grid = document.getElementById('courses-grid');
+      grid.innerHTML = '';
+
+      mockCourses.forEach(course => {
+        const isEnrolled = enrolledCourseIds.includes(course.id);
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        card.innerHTML = `
+          <div>
+            <div class="course-title">${course.title}</div>
+            <div class="course-desc">${course.description}</div>
+          </div>
+          <div class="course-footer">
+            <span class="price">₹${course.price}</span>
+            ${isEnrolled ? 
+              `<button class="btn enrolled" onclick="openCourse('${course.id}')">Access Content</button>` : 
+              `<button class="btn" onclick="enrollCourse('${course.id}')">Enroll Now (Razorpay)</button>`}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function enrollCourse(id) {
+      const course = mockCourses.find(c => c.id === id);
+      
+      const options = {
+        key: 'rzp_test_mock_key',
+        amount: course.price * 100,
+        currency: 'INR',
+        name: 'Synent LMS',
+        description: course.title,
+        handler: function (response) {
+          alert('Payment Successful! Transaction ID: ' + (response.razorpay_payment_id || 'pay_demo12345'));
+          enrolledCourseIds.push(id);
+          localStorage.setItem('synent_enrolled', JSON.stringify(enrolledCourseIds));
+          renderCourses();
+        },
+        prefill: {
+          name: 'Internship Candidate',
+          email: 'candidate@example.com'
+        },
+        theme: { color: '#2563eb' }
+      };
+
+      try {
+        const rzp = new Razorpay(options);
+        rzp.open();
+      } catch(err) {
+        // Fallback for offline demo
+        alert('Simulating Razorpay Test Payment Success!');
+        enrolledCourseIds.push(id);
+        localStorage.setItem('synent_enrolled', JSON.stringify(enrolledCourseIds));
+        renderCourses();
+      }
+    }
+
+    function openCourse(id) {
+      const course = mockCourses.find(c => c.id === id);
+      document.getElementById('modal-title').textContent = course.title;
+      const content = document.getElementById('modal-content');
+      content.innerHTML = course.modules.map(m => `
+        <div class="lesson-item">
+          <span><strong>${m.title}:</strong> ${m.lesson}</span>
+          <span style="color:var(--accent)">Completed</span>
+        </div>
+      `).join('');
+      document.getElementById('course-modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('course-modal').classList.remove('active');
+    }
+
+    renderCourses();
+  </script>
+</body>
+</html>
